@@ -1,0 +1,6 @@
+requests>=2.31.0
+# Optional: for live LLM mode
+# openai>=1.0.0
+# For Jupyter notebooks
+# jupyter>=1.0.0
+# notebook>=7.0.0
