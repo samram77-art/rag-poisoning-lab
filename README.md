@@ -4,6 +4,11 @@ A hands-on security research lab demonstrating knowledge base poisoning attacks 
 
 > Built by [Samson Ram](https://github.com/samram77-art) — AI Security Researcher | Bug Bounty Hunter
 
+[![CI](https://github.com/samram77-art/rag-poisoning-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/samram77-art/rag-poisoning-lab/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
+![MITRE ATLAS](https://img.shields.io/badge/MITRE-ATLAS-red?style=flat)
+
 ---
 
 ## What is RAG Poisoning?
