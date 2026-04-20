@@ -1,0 +1,125 @@
+name: RAG Poisoning Lab — CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  run-demo:
+    name: Run Full Demo (All Attacks)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run full attack demo (simulation mode)
+        run: python demo.py --report
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+
+      - name: Verify all 6 attack modules ran
+        run: |
+          python -c "
+          import subprocess, sys
+          result = subprocess.run(['python', 'demo.py'], capture_output=True, text=True)
+          output = result.stdout
+          attacks = [
+              'Direct Content Injection',
+              'Prompt Hijacking',
+              'Misinformation Injection',
+              'Vector Store Flooding',
+              'Backdoor Trigger',
+              'Instruction Override',
+          ]
+          for attack in attacks:
+              if attack not in output:
+                  print(f'FAIL: {attack} did not run')
+                  sys.exit(1)
+          print('PASS: All 6 attack modules ran successfully')
+          "
+
+      - name: Run individual attack tests
+        run: |
+          for attack in "direct" "hijacking" "misinformation" "flooding" "backdoor" "instruction"; do
+            echo "Testing: $attack"
+            python demo.py --attack "$attack"
+          done
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rag-reports-${{ github.run_number }}
+          path: reports/
+          retention-days: 30
+
+  lint:
+    name: Lint Python Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install flake8
+        run: pip install flake8
+
+      - name: Run flake8 (syntax errors only)
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics \
+            --exclude=__pycache__,.git
+        continue-on-error: true
+
+  security-scan:
+    name: Security Scan (Bandit)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Bandit
+        run: pip install bandit
+
+      - name: Run Bandit
+        run: |
+          bandit -r rag/ attacks/ defense/ reports/ \
+            --severity-level medium \
+            --format txt \
+            -o bandit-report.txt || true
+          cat bandit-report.txt
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report-${{ github.run_number }}
+          path: bandit-report.txt
+          retention-days: 30
